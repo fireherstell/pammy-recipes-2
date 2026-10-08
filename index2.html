@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PAMMY'S FOOD RECIPE SOLVER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #fdfbf7; color: #2d3748; font-family: system-ui, -apple-system, sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="pb-32">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-40 bg-[#fdfbf7]/95 backdrop-blur border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white text-lg">🍳</div>
+      <div>
+        <h1 class="font-bold text-sm leading-tight text-gray-900 uppercase tracking-wide">PAMMY'S FOOD RECIPE SOLVER</h1>
+        <p class="text-xs text-gray-500">Cook with what you have</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button onclick="toggleSettingsModal(true)" class="flex items-center space-x-1 px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium bg-white hover:bg-gray-50 shadow-sm">
+        <span>⚙️</span>
+        <span>Settings</span>
+      </button>
+      <button onclick="openSavedRecipesModal()" class="flex items-center space-x-1 px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium bg-white hover:bg-gray-50 shadow-sm">
+        <span>📖</span>
+        <span>Saved</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-4xl mx-auto px-4 pt-4 space-y-6">
+
+    <!-- SEARCH & QUICK SUGGESTIONS -->
+    <div class="space-y-3">
+      <div class="relative">
+        <input id="searchInput" type="text" oninput="handleSearch()" placeholder="Search ingredients (e.g. Aloo, Paneer, Milk)..." 
+               class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" />
+        <span class="absolute left-3.5 top-3 text-gray-400 text-sm">🔍</span>
+      </div>
+
+      <!-- Quick Combos / Prompts -->
+      <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1">
+        <button onclick="applyQuickFilter(['Potato', 'Cumin Seeds'])" class="bg-amber-50 text-amber-800 border border-amber-200 text-xs px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-amber-100">Have Aloo & Jeera? Try Jeera Aloo!</button>
+        <button onclick="applyQuickFilter(['Paneer', 'Tomato'])" class="bg-amber-50 text-amber-800 border border-amber-200 text-xs px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-amber-100">Have Paneer & Tamatar? Try Paneer Bhurji!</button>
+        <button onclick="applyQuickFilter(['Spinach', 'Paneer'])" class="bg-amber-50 text-amber-800 border border-amber-200 text-xs px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-amber-100">Have Palak & Paneer? Try Palak Paneer!</button>
+        <button onclick="applyQuickFilter(['Curd', 'Rice Regular'])" class="bg-amber-50 text-amber-800 border border-amber-200 text-xs px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-amber-100">Have Dahi & Rice? Try Curd Rice!</button>
+      </div>
+    </div>
+
+    <!-- CATEGORY TABS -->
+    <div id="categoryTabs" class="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-2 border-b border-gray-200">
+      <!-- Generated via JS -->
+    </div>
+
+    <!-- INGREDIENT CARDS GRID -->
+    <div id="ingredientsGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <!-- Generated via JS -->
+    </div>
+
+  </main>
+
+  <!-- BOTTOM FLOATING ACTION BAR -->
+  <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur border-t border-gray-200 z-30 flex justify-center">
+    <button id="askChefBtn" onclick="askChefPammy()" class="w-full max-w-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-2xl shadow-lg flex items-center justify-center space-x-2 transition-all">
+      <span>✨ Ask Chef Pammy (<span id="selectedCount">0</span> items)</span>
+    </button>
+  </div>
+
+  <!-- SETTINGS MODAL (API Key & Staples) -->
+  <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h2 class="text-lg font-bold text-gray-900">⚙️ Settings</h2>
+        <button onclick="toggleSettingsModal(false)" class="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+      </div>
+
+      <!-- API Key Setup (Saved once) -->
+      <div class="space-y-2">
+        <label class="block text-xs font-bold uppercase tracking-wider text-gray-600">OpenAI API Key (Stored Locally)</label>
+        <input id="apiKeyInput" type="password" placeholder="sk-..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500" />
+        <p class="text-[11px] text-gray-500">Your key is stored safely in your browser's local storage and is never sent to any server other than OpenAI.</p>
+      </div>
+
+      <!-- Unit Preference -->
+      <div class="space-y-2">
+        <label class="block text-xs font-bold uppercase tracking-wider text-gray-600">Measurement Units</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="unitMetric" onclick="setMeasurementUnit('metric')" class="py-2 text-xs font-medium rounded-lg border border-orange-500 bg-orange-50 text-orange-700">Metric (g / ml)</button>
+          <button id="unitCups" onclick="setMeasurementUnit('cups')" class="py-2 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-600">Cups & Spoons</button>
+        </div>
+      </div>
+
+      <!-- Pantry Staples -->
+      <div class="space-y-2">
+        <label class="block text-xs font-bold uppercase tracking-wider text-gray-600">Pantry Staples (Always Available)</label>
+        <div id="staplesList" class="flex flex-wrap gap-1.5"></div>
+        <div class="flex space-x-2 pt-2">
+          <input id="newStapleInput" type="text" placeholder="Add staple (e.g. Ghee)" class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-xs" />
+          <button onclick="addStaple()" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">+ Add</button>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t flex justify-end">
+        <button onclick="saveSettings()" class="bg-orange-500 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-orange-600">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVED RECIPES MODAL -->
+  <div id="savedRecipesModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h2 class="text-lg font-bold text-gray-900">📖 Saved Recipes</h2>
+        <button onclick="closeSavedRecipesModal()" class="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+      </div>
+      <div id="savedRecipesContainer" class="space-y-4">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- AI RESPONSE MODAL -->
+  <div id="recipeResultModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h2 class="text-lg font-bold text-gray-900">👨‍🍳 Chef Pammy's Suggestions</h2>
+        <button onclick="toggleRecipeModal(false)" class="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+      </div>
+      <div id="recipeOutput" class="space-y-4 text-sm leading-relaxed">
+        <!-- AI Response content renders here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MASTER INGREDIENT DATASET -->
+  <script>
+    const MASTER_INGREDIENTS = [
+      // VEGETABLES
+      { category: "VEGETABLES", name: "Potato", hindi: "Aloo", pack: "1 kg", step: 250, unit: "g", aliases: ["alu", "batata"] },
+      { category: "VEGETABLES", name: "Onion", hindi: "Pyaz", pack: "1 kg", step: 250, unit: "g", aliases: ["kanda"] },
+      { category: "VEGETABLES", name: "Tomato", hindi: "Tamatar", pack: "1 kg", step: 250, unit: "g", aliases: ["tamatar"] },
+      { category: "VEGETABLES", name: "Lettuce", hindi: "Lettuce", pack: "1 piece", step: 100, unit: "g", aliases: [] },
+      { category: "VEGETABLES", name: "Red Cabbage", hindi: "Laal Patta Gobhi", pack: "1 piece", step: 250, unit: "g", aliases: [] },
+      { category: "VEGETABLES", name: "Eggplant Big", hindi: "Baingan", pack: "500 g", step: 250, unit: "g", aliases: ["brinjal"] },
+      { category: "VEGETABLES", name: "Banana Flower", hindi: "Kele Ka Phool", pack: "1 piece", step: 1, unit: "piece", aliases: [] },
+      { category: "VEGETABLES", name: "Lemongrass", hindi: "Lemongrass", pack: "100 g", step: 50, unit: "g", aliases: [] },
+      { category: "VEGETABLES", name: "Button Mushroom", hindi: "Khumbh", pack: "200 g", step: 100, unit: "g", aliases: ["mushroom"] },
+
+      // FRUITS
+      { category: "FRUITS", name: "Passion Fruit", hindi: "Passion Fruit", pack: "250 g", step: 100, unit: "g", aliases: [] },
+      { category: "FRUITS", name: "Mulberry", hindi: "Shahtoot", pack: "250 g", step: 100, unit: "g", aliases: [] },
+      { category: "FRUITS", name: "Pomegranate", hindi: "Anar", pack: "1 piece", step: 1, unit: "piece", aliases: [] },
+      { category: "FRUITS", name: "Sugarcane", hindi: "Ganna", pack: "1 piece", step: 1, unit: "piece", aliases: [] },
+      { category: "FRUITS", name: "Blueberry", hindi: "Blueberry", pack: "125 g", step: 50, unit: "g", aliases: [] },
+      { category: "FRUITS", name: "Mangosteen", hindi: "Mangosteen", pack: "250 g", step: 100, unit: "g", aliases: [] },
+      { category: "FRUITS", name: "Sapodilla", hindi: "Chiku", pack: "500 g", step: 100, unit: "g", aliases: ["chikoo"] },
+
+      // DAIRY
+      { category: "DAIRY", name: "Ricotta", hindi: "Ricotta", pack: "250 g", step: 100, unit: "g", aliases: [] },
+      { category: "DAIRY", name: "Rabri", hindi: "Rabri", pack: "250 g", step: 100, unit: "g", aliases: [] },
+      { category: "DAIRY", name: "Hung Curd", hindi: "Chakka Dahi", pack: "250 g", step: 100, unit: "g", aliases: ["hung yogurt"] },
+      { category: "DAIRY", name: "Oat Milk", hindi: "Oat Doodh", pack: "1 litre", step: 250, unit: "ml", aliases: [] },
+      { category: "DAIRY", name: "Vegan Butter", hindi: "Vegan Butter", pack: "200 g", step: 50, unit: "g", aliases: [] },
+      { category: "DAIRY", name: "Milk Toned", hindi: "Toned Doodh", pack: "1 litre", step: 250, unit: "ml", aliases: ["milk", "doodh"] },
+      { category: "DAIRY", name: "Cheese Slices", hindi: "Cheese Slice", pack: "10 slices", step: 1, unit: "slice", aliases: [] },
+      { category: "DAIRY", name: "Curd", hindi: "Dahi", pack: "500 g", step: 100, unit: "g", aliases: ["yogurt"] },
+
+      // EGGS
+      { category: "EGGS", name: "Brown Egg", hindi: "Desi Anda", pack: "6 pieces", step: 1, unit: "piece", aliases: [] },
+      { category: "EGGS", name: "Egg", hindi: "Anda", pack: "1 dozen", step: 1, unit: "piece", aliases: ["egg"] },
+      { category: "EGGS", name: "Quail Egg", hindi: "Bater Anda", pack: "12 pieces", step: 1, unit: "piece", aliases: [] },
+      { category: "EGGS", name: "Boiled Egg", hindi: "Ubla Anda", pack: "6 pieces", step: 1, unit: "piece", aliases: [] },
+
+      // GRAINS
+      { category: "GRAINS", name: "Rice Poha Thick", hindi: "Mota Poha", pack: "500 g", step: 250, unit: "g", aliases: ["poha"] },
+      { category: "GRAINS", name: "Paratha Frozen", hindi: "Frozen Paratha", pack: "5 pieces", step: 1, unit: "piece", aliases: [] },
+      { category: "GRAINS", name: "Vermicelli", hindi: "Seviyan", pack: "500 g", step: 250, unit: "g", aliases: ["sewai"] },
+      { category: "GRAINS", name: "Dhokla Mix", hindi: "Dhokla Mix", pack: "500 g", step: 250, unit: "g", aliases: [] },
+      { category: "GRAINS", name: "Amaranth Flour", hindi: "Rajgira Atta", pack: "500 g", step: 250, unit: "g", aliases: [] },
+      { category: "GRAINS", name: "Bread Crumbs", hindi: "Bread Crumbs", pack: "200 g", step: 50, unit: "g", aliases: [] },
+
+      // NUTS & SEEDS
+      { category: "NUTS", name: "Almonds", hindi: "Badam", pack: "250 g", step: 50, unit: "g", aliases: ["badam"] },
+      { category: "NUTS", name: "Flax Seeds", hindi: "Alsi", pack: "250 g", step: 50, unit: "g", aliases: [] },
+      { category: "NUTS", name: "Desiccated Coconut", hindi: "Nariyal Powder", pack: "200 g", step: 50, unit: "g", aliases: [] },
+      { category: "NUTS", name: "Dried Figs", hindi: "Anjeer", pack: "250 g", step: 50, unit: "g", aliases: ["fig"] },
+
+      // PULSES
+      { category: "PULSES", name: "Pigeon Peas Fresh", hindi: "Hara Toor", pack: "250 g", step: 100, unit: "g", aliases: [] },
+      { category: "PULSES", name: "Dried Green Peas", hindi: "Sukha Matar", pack: "500 g", step: 250, unit: "g", aliases: [] },
+      { category: "PULSES", name: "Black Eyed Peas", hindi: "Lobia Chawli", pack: "500 g", step: 250, unit: "g", aliases: ["lobia"] },
+      { category: "PULSES", name: "Moong Dal Green Split", hindi: "Chilka Moong Dal", pack: "1 kg", step: 250, unit: "g", aliases: [] }
+    ];
+
+    // STATE APP STORAGE
+    let selectedIngredients = {}; // { "Potato": 250, "Lettuce": 100 }
+    let currentCategory = "ALL";
+    let searchQuery = "";
+    let pantryStaples = ["Salt", "Water", "Cooking Oil", "Turmeric", "Red Chilli Powder", "Cumin Seeds", "Mustard Seeds"];
+    let measurementUnit = "metric";
+
+    // INITIALIZATION
+    window.onload = () => {
+      loadSettings();
+      renderCategoryTabs();
+      renderIngredients();
+      updateSelectedCount();
+    };
+
+    function loadSettings() {
+      const storedKey = localStorage.getItem("pammy_openai_key");
+      if (storedKey) document.getElementById("apiKeyInput").value = storedKey;
+      
+      const storedStaples = localStorage.getItem("pammy_staples");
+      if (storedStaples) pantryStaples = JSON.parse(storedStaples);
+
+      const storedUnit = localStorage.getItem("pammy_unit");
+      if (storedUnit) measurementUnit = storedUnit;
+      
+      renderStaples();
+    }
+
+    function toggleSettingsModal(show) {
+      document.getElementById("settingsModal").classList.toggle("hidden", !show);
+    }
+
+    function saveSettings() {
+      const key = document.getElementById("apiKeyInput").value.trim();
+      localStorage.setItem("pammy_openai_key", key);
+      localStorage.setItem("pammy_staples", JSON.stringify(pantryStaples));
+      localStorage.setItem("pammy_unit", measurementUnit);
+      toggleSettingsModal(false);
+      alert("Settings saved successfully!");
+    }
+
+    function setMeasurementUnit(unit) {
+      measurementUnit = unit;
+      document.getElementById("unitMetric").className = unit === 'metric' 
+        ? "py-2 text-xs font-medium rounded-lg border border-orange-500 bg-orange-50 text-orange-700"
+        : "py-2 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-600";
+      document.getElementById("unitCups").className = unit === 'cups' 
+        ? "py-2 text-xs font-medium rounded-lg border border-orange-500 bg-orange-50 text-orange-700"
+        : "py-2 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-600";
+    }
+
+    function renderStaples() {
+      const container = document.getElementById("staplesList");
+      container.innerHTML = pantryStaples.map((staple, index) => `
+        <span class="inline-flex items-center space-x-1 bg-amber-50 text-amber-800 text-xs px-2.5 py-1 rounded-full border border-amber-200">
+          <span>${staple}</span>
+          <button onclick="removeStaple(${index})" class="text-amber-500 hover:text-amber-700 font-bold ml-1">✕</button>
+        </span>
+      `).join("");
+    }
+
+    function addStaple() {
+      const input = document.getElementById("newStapleInput");
+      const value = input.value.trim();
+      if (value && !pantryStaples.includes(value)) {
+        pantryStaples.push(value);
+        input.value = "";
+        renderStaples();
+      }
+    }
+
+    function removeStaple(index) {
+      pantryStaples.splice(index, 1);
+      renderStaples();
+    }
+
+    // CATEGORIES RENDER
+    function renderCategoryTabs() {
+      const categories = ["ALL", ...new Set(MASTER_INGREDIENTS.map(i => i.category))];
+      const tabsContainer = document.getElementById("categoryTabs");
+      tabsContainer.innerHTML = categories.map(cat => `
+        <button onclick="selectCategory('${cat}')" class="px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${currentCategory === cat ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+          ${cat}
+        </button>
+      `).join("");
+    }
+
+    function selectCategory(cat) {
+      currentCategory = cat;
+      renderCategoryTabs();
+      renderIngredients();
+    }
+
+    function handleSearch() {
+      searchQuery = document.getElementById("searchInput").value.toLowerCase().trim();
+      renderIngredients();
+    }
+
+    function applyQuickFilter(itemNames) {
+      itemNames.forEach(name => {
+        const found = MASTER_INGREDIENTS.find(i => i.name.toLowerCase().includes(name.toLowerCase()));
+        if (found) {
+          selectedIngredients[found.name] = found.step;
+        }
+      });
+      renderIngredients();
+      updateSelectedCount();
+    }
+
+    // INGREDIENTS CARDS RENDER
+    function renderIngredients() {
+      const grid = document.getElementById("ingredientsGrid");
+      const filtered = MASTER_INGREDIENTS.filter(item => {
+        const matchesCategory = currentCategory === "ALL" || item.category === currentCategory;
+        const matchesSearch = item.name.toLowerCase().includes(searchQuery) || 
+                              item.hindi.toLowerCase().includes(searchQuery) ||
+                              item.aliases.some(a => a.toLowerCase().includes(searchQuery));
+        return matchesCategory && matchesSearch;
+      });
+
+      grid.innerHTML = filtered.map(item => {
+        const qty = selectedIngredients[item.name] || 0;
+        const inKitchen = qty > 0;
+
+        return `
+          <div class="bg-white rounded-2xl p-4 border transition-all flex flex-col justify-between relative shadow-sm ${inKitchen ? 'border-emerald-400 bg-emerald-50/20' : 'border-gray-100'}">
+            
+            <!-- Badge Top Right -->
+            <div class="flex justify-between items-start mb-2">
+              <div class="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center font-bold text-orange-600 text-lg">
+                ${item.name.charAt(0)}
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${inKitchen ? 'bg-emerald-100 text-emerald-700' : 'text-gray-400 bg-gray-50'}">
+                ${inKitchen ? `In kitchen: ${qty}${item.unit}` : 'Not in kitchen'}
+              </span>
+            </div>
+
+            <!-- Titles -->
+            <div class="mb-3">
+              <h3 class="font-bold text-gray-900 text-sm leading-tight">${item.hindi}</h3>
+              <p class="text-xs text-gray-500">${item.name}</p>
+              <p class="text-[11px] text-gray-400 mt-0.5">Buy: ${item.pack}</p>
+            </div>
+
+            <!-- Increment / Decrement Counter Controls -->
+            <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+              <button onclick="updateQty('${item.name}', -${item.step})" class="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center font-bold text-gray-600 text-sm shadow-sm">-</button>
+              <span class="text-xs font-bold text-gray-800">${qty}${item.unit}</span>
+              <button onclick="updateQty('${item.name}', ${item.step})" class="w-8 h-8 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">+</button>
+            </div>
+            <div class="text-[10px] text-center text-gray-400 mt-1">±${item.step}${item.unit}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function updateQty(name, delta) {
+      const item = MASTER_INGREDIENTS.find(i => i.name === name);
+      if (!item) return;
+
+      const currentQty = selectedIngredients[name] || 0;
+      const newQty = Math.max(0, currentQty + delta);
+
+      if (newQty === 0) {
+        delete selectedIngredients[name];
+      } else {
+        selectedIngredients[name] = newQty;
+      }
+
+      renderIngredients();
+      updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+      const count = Object.keys(selectedIngredients).length;
+      document.getElementById("selectedCount").innerText = count;
+    }
+
+    // AI API INTEGRATION
+    async function askChefPammy() {
+      const key = localStorage.getItem("pammy_openai_key");
+      if (!key) {
+        alert("Please set your OpenAI API key in Settings first!");
+        toggleSettingsModal(true);
+        return;
+      }
+
+      const availableItems = Object.entries(selectedIngredients).map(([name, qty]) => {
+        const item = MASTER_INGREDIENTS.find(i => i.name === name);
+        return `${item.hindi} (${name}): ${qty}${item.unit}`;
+      });
+
+      if (availableItems.length === 0) {
+        alert("Please select at least one ingredient in your kitchen!");
+        return;
+      }
+
+      const modal = document.getElementById("recipeResultModal");
+      const output = document.getElementById("recipeOutput");
+      modal.classList.remove("hidden");
+      output.innerHTML = `<div class="p-8 text-center text-gray-500 animate-pulse">👨‍🍳 Chef Pammy is crafting recipes from your kitchen items...</div>`;
+
+      const prompt = `
+You are Chef Pammy, an expert Indian home chef.
+Selected Ingredients in Kitchen:
+${availableItems.join(", ")}
+
+Pantry Staples assumed available:
+${pantryStaples.join(", ")}
+
+Units preference: ${measurementUnit}
+
+Suggest 2 to 3 practical, delicious recipes that can be made using primarily these available ingredients.
+Format each recipe clearly:
+- Recipe Title
+- Cooking Time
+- Ingredients Used (Highlight From Kitchen vs Missing/Additions)
+- Step-by-Step Instructions (numbered)
+`;
+
+      try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${key}`
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.7
+          })
+        });
+
+        const data = await response.json();
+        if (data.error) {
+          output.innerHTML = `<div class="text-red-500 p-4 bg-red-50 rounded-xl">Error: ${data.error.message}</div>`;
+          return;
+        }
+
+        const recipeText = data.choices[0].message.content;
+        output.innerHTML = `
+          <div class="prose max-w-none text-gray-800 space-y-4">
+            ${formatMarkdown(recipeText)}
+          </div>
+          <div class="pt-4 border-t flex justify-end">
+            <button onclick="saveCurrentRecipe('${escapeHtml(recipeText)}')" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded-lg text-xs">💾 Save Recipe</button>
+          </div>
+        `;
+      } catch (err) {
+        output.innerHTML = `<div class="text-red-500 p-4 bg-red-50 rounded-xl">Network error connecting to API: ${err.message}</div>`;
+      }
+    }
+
+    function toggleRecipeModal(show) {
+      document.getElementById("recipeResultModal").classList.toggle("hidden", !show);
+    }
+
+    // SAVED RECIPES MANAGEMENT
+    function saveCurrentRecipe(text) {
+      let saved = JSON.parse(localStorage.getItem("pammy_saved_recipes") || "[]");
+      saved.push({ id: Date.now(), text: unescapeHtml(text) });
+      localStorage.setItem("pammy_saved_recipes", JSON.stringify(saved));
+      alert("Recipe saved to your browser!");
+    }
+
+    function openSavedRecipesModal() {
+      const container = document.getElementById("savedRecipesContainer");
+      let saved = JSON.parse(localStorage.getItem("pammy_saved_recipes") || "[]");
+
+      if (saved.length === 0) {
+        container.innerHTML = `<p class="text-gray-400 text-sm text-center py-6">No saved recipes yet.</p>`;
+      } else {
+        container.innerHTML = saved.map(r => `
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 relative space-y-2">
+            <button onclick="deleteRecipe(${r.id})" class="absolute top-3 right-3 text-red-500 hover:text-red-700 text-xs font-bold">🗑 Delete</button>
+            <div class="text-xs text-gray-700 whitespace-pre-line">${formatMarkdown(r.text)}</div>
+          </div>
+        `).join("");
+      }
+      document.getElementById("savedRecipesModal").classList.remove("hidden");
+    }
+
+    function deleteRecipe(id) {
+      let saved = JSON.parse(localStorage.getItem("pammy_saved_recipes") || "[]");
+      saved = saved.filter(r => r.id !== id);
+      localStorage.setItem("pammy_saved_recipes", JSON.stringify(saved));
+      openSavedRecipesModal();
+    }
+
+    function closeSavedRecipesModal() {
+      document.getElementById("savedRecipesModal").classList.add("hidden");
+    }
+
+    // HELPER UTILS
+    function formatMarkdown(text) {
+      return text
+        .replace(/### (.*)/g, '<h3 class="font-bold text-lg text-orange-600 mt-3">$1</h3>')
+        .replace(/## (.*)/g, '<h2 class="font-bold text-xl text-gray-900 mt-4 border-b pb-1">$1</h2>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br/>');
+    }
+
+    function escapeHtml(str) {
+      return encodeURIComponent(str);
+    }
+    function unescapeHtml(str) {
+      return decodeURIComponent(str);
+    }
+  </script>
+</body>
+</html>
